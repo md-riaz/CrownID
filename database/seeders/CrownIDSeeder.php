@@ -41,22 +41,24 @@ class CrownIDSeeder extends Seeder
             ]
         );
 
-        $testClient = Client::updateOrCreate(
-            [
-                'realm_id' => $masterRealm->id,
-                'client_id' => 'test-client',
-            ],
-            [
-                'id' => Str::uuid(),
-                'name' => 'Test Client',
-                'secret' => Hash::make('test-secret'),
-                'redirect_uris' => json_encode(['http://localhost:8000/callback']),
-                'grant_types' => json_encode(['authorization_code', 'refresh_token']),
-                'client_type' => 'confidential',
-                'enabled' => true,
-                'revoked' => false,
-            ]
-        );
+        $testClient = Client::firstOrNew([
+            'realm_id' => $masterRealm->id,
+            'client_id' => 'test-client',
+        ]);
+
+        if (!$testClient->exists) {
+            $testClient->id = Str::uuid();
+        }
+
+        $testClient->fill([
+            'name' => 'Test Client',
+            'secret' => Hash::make('test-secret'),
+            'redirect_uris' => json_encode(['http://localhost:8000/callback']),
+            'grant_types' => json_encode(['authorization_code', 'refresh_token']),
+            'client_type' => 'confidential',
+            'enabled' => true,
+            'revoked' => false,
+        ])->save();
 
         $this->command->info('Created master realm');
         $this->command->info("Created test user: {$testUser->email} / password");

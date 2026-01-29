@@ -633,6 +633,430 @@ cp .env.example .env
 php artisan key:generate
 
 # Generate OAuth keys
+## 🎛️ Admin Dashboard (Tyro Dashboard)
+
+CrownID includes a **complete Admin UI** powered by [Tyro Dashboard](https://github.com/hasinhayder/tyro-dashboard) - a production-ready Laravel admin panel package.
+
+### Why Tyro Dashboard?
+
+Instead of building admin panels from scratch (40-60 hours), Tyro Dashboard provides everything through simple configuration:
+
+- ✅ **User Management** - Complete CRUD, search, 2FA, suspension
+- ✅ **Role & Privilege Management** - Visual RBAC administration
+- ✅ **Dynamic Resource CRUD** - Configure models, get full admin interface
+- ✅ **Beautiful UI** - Modern, responsive, shadcn components
+- ✅ **Security** - Built-in authorization and middleware
+
+### Access the Admin Panel
+
+```bash
+# Start the server
+php artisan serve
+
+# Visit the dashboard
+open http://localhost:8000/dashboard
+```
+
+**Authentication**: Uses CrownID's existing user authentication.
+
+### Available Pages
+
+#### 1. 📊 Dashboard Home (`/dashboard`)
+
+**Admin Dashboard**:
+- Total user count & statistics
+- Suspended vs. active users
+- Recent user list
+- Total roles & privileges count
+- System insights
+
+**User Dashboard** (for non-admin users):
+- Personalized welcome
+- Relevant user metrics
+- Custom content area
+
+#### 2. 👥 User Management (`/dashboard/users`)
+
+**Tyro's Built-in User Management**:
+- ✅ Full CRUD operations
+- ✅ Search & filtering
+- ✅ User suspension/unsuspension with reasons
+- ✅ Two-factor authentication (2FA) management
+- ✅ Email verification tracking
+- ✅ Role assignment
+- ✅ Bulk operations
+- ✅ Self-suspension protection
+
+**Features**:
+- List all users with pagination
+- Search by name, email, username
+- Filter by status (active/suspended)
+- Assign roles to users
+- Enable/disable 2FA
+- Suspend users with reason tracking
+
+#### 3. 👔 Role Management (`/dashboard/roles`)
+
+**Tyro's Built-in Role System**:
+- ✅ Create and manage roles
+- ✅ Protected roles (prevent deletion of critical roles)
+- ✅ Visual role management interface
+- ✅ Many-to-many role-privilege relationships
+
+**Features**:
+- List all roles
+- Create new roles
+- Edit role details
+- Delete roles (except protected ones)
+- View users with each role
+
+####  4. 🔐 Privilege Management (`/dashboard/privileges`)
+
+**Tyro's Built-in Privilege System**:
+- ✅ Define granular privileges
+- ✅ Assign privileges to roles
+- ✅ Visual privilege-role relationships
+- ✅ Protected privilege configuration
+
+**Features**:
+- List all privileges
+- Create new privileges
+- Edit privilege details
+- Assign to multiple roles
+- View which roles have each privilege
+
+#### 5. 🌐 Realms Management (`/dashboard/resources/realms`)
+
+**CrownID-Specific: Multi-tenant Realms**
+
+Dynamically generated CRUD interface from configuration:
+
+**Fields**:
+- **Name** - Unique realm identifier (searchable)
+- **Display Name** - Human-readable name (searchable)
+- **Enabled** - Toggle realm on/off
+- **Access Token Lifespan** - Token expiry in seconds (min: 60)
+- **Refresh Token Lifespan** - Refresh token expiry (min: 300)
+
+**Operations**:
+- ✅ List all realms with search
+- ✅ Create new realm (form auto-generated)
+- ✅ Edit realm settings (validation included)
+- ✅ Delete realm
+- ✅ View realm details
+
+**No Code Required** - Fully generated from `config/tyro-dashboard.php`
+
+#### 6. 🔑 OAuth Clients Management (`/dashboard/resources/clients`)
+
+**CrownID-Specific: OAuth 2.0 / OIDC Clients**
+
+Dynamically generated CRUD interface:
+
+**Fields**:
+- **Realm** - Select dropdown (relationship)
+- **Client ID** - Unique identifier (searchable)
+- **Name** - Human-readable name (searchable)
+- **Secret** - Client secret (password field)
+- **Redirect URIs** - Allowed callback URLs (textarea)
+- **Enabled** - Toggle client on/off
+
+**Operations**:
+- ✅ List all OAuth clients
+- ✅ Create new client
+- ✅ Edit client settings
+- ✅ Delete client
+- ✅ Search clients by ID or name
+
+**No Code Required** - Fully generated from configuration
+
+#### 7. 👤 Profile Management (`/dashboard/profile`)
+
+**User Profile Settings**:
+- Update password
+- Enable/disable 2FA
+- Reset 2FA if enabled
+- View account details
+
+---
+
+### Dynamic Resource CRUD
+
+Tyro Dashboard's **game-changing feature**: Define your data model in configuration, get a complete admin interface automatically.
+
+#### How It Works
+
+Instead of writing controllers, views, routes, validation, and file upload logic, you simply configure your model in `config/tyro-dashboard.php`:
+
+```php
+'resources' => [
+    'realms' => [
+        'model' => 'App\Models\Realm',
+        'title' => 'Authentication Realms',
+        'icon' => '<svg>...</svg>',  // Optional icon
+        'roles' => ['admin'],         // Who can access
+        'fields' => [
+            'name' => [
+                'type' => 'text',
+                'label' => 'Realm Name',
+                'rules' => 'required|string|unique:realms,name',
+                'searchable' => true,
+            ],
+            'enabled' => [
+                'type' => 'boolean',
+                'label' => 'Enabled',
+                'default' => true,
+            ],
+            // ... more fields
+        ],
+    ],
+]
+```
+
+**Tyro Dashboard Automatically Generates**:
+- ✅ List view with pagination
+- ✅ Search across searchable fields
+- ✅ Sortable columns
+- ✅ Create form with validation
+- ✅ Edit form
+- ✅ Delete operations
+- ✅ File upload handling (if configured)
+- ✅ Relationship management (select dropdowns)
+- ✅ Role-based access control
+
+**Result**: Visit `/dashboard/resources/realms` - complete CRUD interface, zero custom code!
+
+#### Supported Field Types
+
+- `text` - Text input
+- `textarea` - Multi-line text
+- `password` - Password field (hidden)
+- `number` - Numeric input
+- `boolean` - Checkbox
+- `select` - Dropdown (with relationship support)
+- `file` - File upload
+- `date` - Date picker
+- `datetime` - DateTime picker
+- `email` - Email input
+- `url` - URL input
+
+#### Field Options
+
+```php
+'field_name' => [
+    'type' => 'text',
+    'label' => 'Field Label',
+    'rules' => 'required|string|max:255',
+    'searchable' => true,          // Enable search on this field
+    'sortable' => true,            // Make column sortable
+    'default' => 'value',          // Default value
+    'help' => 'Help text',         // Help text below field
+    'placeholder' => 'Enter...',   // Placeholder text
+    'relationship' => 'methodName', // For select type (belongsTo)
+    'option_label' => 'name',      // Field to display in select
+]
+```
+
+---
+
+### UI Design
+
+#### Layout Structure
+
+```
+┌──────────────────────────────────────────────────┐
+│  CrownID    [Search]        Profile | Logout    │
+├──────────┬───────────────────────────────────────┤
+│          │                                        │
+│ 📊 Dash  │  Main Content Area                    │
+│ 👥 Users │  - Tables with search                 │
+│ 👔 Roles │  - Forms with validation              │
+│ 🔐 Privs │  - Statistics cards                   │
+│ 🌐 Realms│  - Modern components                  │
+│ 🔑 Clients                                        │
+│ 👤 Profile                                        │
+│                                                   │
+└──────────┴───────────────────────────────────────┘
+```
+
+#### Theme
+
+- **Component Library**: shadcn/ui (modern, accessible)
+- **Color Scheme**: Professional dark/light theme
+- **Typography**: Inter font family
+- **Icons**: Heroicons
+- **Responsive**: Mobile, tablet, desktop optimized
+
+#### Components
+
+**Tables**:
+- Sortable columns
+- Search functionality
+- Pagination
+- Action buttons (Edit/Delete)
+- Row hover effects
+
+**Forms**:
+- Validation messages
+- Help text
+- Error highlighting
+- Responsive layout
+- File upload with preview
+
+**Status Indicators**:
+- Success (green)
+- Warning (yellow)
+- Error (red)
+- Info (blue)
+
+---
+
+### Configuration
+
+All settings in `config/tyro-dashboard.php`:
+
+```php
+return [
+    // Route prefix
+    'routes' => [
+        'prefix' => 'dashboard',
+        'middleware' => ['web', 'auth'],
+    ],
+    
+    // Admin roles (full access)
+    'admin_roles' => ['admin', 'super-admin'],
+    
+    // User model
+    'user_model' => 'App\\Models\\User',
+    
+    // Branding
+    'branding' => [
+        'app_name' => '👑 CrownID',
+        'logo' => null,
+        'favicon' => null,
+    ],
+    
+    // Features
+    'features' => [
+        'user_management' => true,
+        'role_management' => true,
+        'privilege_management' => true,
+        'profile_management' => true,
+    ],
+    
+    // Protected resources (cannot be deleted)
+    'protected' => [
+        'roles' => ['admin', 'super-admin'],
+        'users' => [],
+    ],
+    
+    // Your custom resources
+    'resources' => [
+        'realms' => [...],
+        'clients' => [...],
+    ],
+];
+```
+
+---
+
+### Adding More Resources
+
+Want to manage more models? Just add configuration:
+
+```php
+'resources' => [
+    'audit_logs' => [
+        'model' => 'App\Models\AuditEvent',
+        'title' => 'Audit Logs',
+        'roles' => ['admin'],
+        'readonly' => ['viewer'], // View-only access for certain roles
+        'fields' => [
+            'type' => [
+                'type' => 'select',
+                'options' => ['LOGIN', 'LOGOUT', 'PASSWORD_CHANGE'],
+            ],
+            'user_id' => [
+                'type' => 'select',
+                'relationship' => 'user',
+                'option_label' => 'username',
+            ],
+            'ip_address' => ['type' => 'text'],
+            'created_at' => ['type' => 'datetime', 'readonly' => true],
+        ],
+    ],
+]
+```
+
+Visit `/dashboard/resources/audit_logs` - **instant audit log viewer!**
+
+---
+
+### Comparison with Keycloak Admin Console
+
+| Feature | CrownID (Tyro Dashboard) | Keycloak Admin Console |
+|---------|-------------------------|------------------------|
+| **User Management** | ✅ Full CRUD, search | ✅ Full CRUD |
+| **Role Management** | ✅ Visual interface | ✅ Comprehensive |
+| **UI Framework** | shadcn/ui (modern) | PatternFly React |
+| **Performance** | ⚡ Lightweight (PHP) | Heavy (Java) |
+| **Customization** | ✅ Laravel views | Limited |
+| **Resource Management** | ✅ Config-based | Manual coding |
+| **Mobile Responsive** | ✅ Fully responsive | ⚠️ Desktop-focused |
+| **Learning Curve** | Low (Laravel devs) | High |
+| **Setup Time** | 5 minutes | Complex |
+
+---
+
+### Screenshots
+
+#### Dashboard Home
+![Dashboard](docs/screenshots/tyro-dashboard-home.png)
+*Admin dashboard showing user statistics and recent activity*
+
+#### User Management
+![User Management](docs/screenshots/tyro-users.png)
+*Complete user CRUD with search, filters, and role assignment*
+
+#### Role Management
+![Role Management](docs/screenshots/tyro-roles.png)
+*Visual role management with privilege assignment*
+
+#### Realms Management
+![Realms](docs/screenshots/tyro-realms.png)
+*CrownID realms configuration - dynamically generated interface*
+
+#### OAuth Clients
+![Clients](docs/screenshots/tyro-clients.png)
+*OAuth client management with auto-generated forms*
+
+---
+
+### Documentation
+
+**Full Tyro Dashboard Documentation**:
+- [Official Docs](http://hasinhayder.github.io/tyro-dashboard/documentation.html)
+- [GitHub Repository](https://github.com/hasinhayder/tyro-dashboard)
+- [Dynamic CRUD Guide](http://hasinhayder.github.io/tyro-dashboard/documentation.html)
+
+**CrownID-Specific**:
+- Configuration file: `config/tyro-dashboard.php`
+- Custom views: `resources/views/vendor/tyro-dashboard/`
+- Routes: `php artisan route:list | grep dashboard`
+
+---
+
+### Benefits for CrownID
+
+1. **Time Savings**: 40+ hours saved by not building custom admin
+2. **Consistency**: Standardized UI patterns across all resources
+3. **Maintainability**: Package updates benefit all features
+4. **Extensibility**: Easy to add new resources (just configuration)
+5. **Security**: Built-in authorization and middleware
+6. **Professional**: Production-ready interface out of the box
+
+**Focus on what makes CrownID unique** (OIDC implementation), not on repetitive admin CRUD!
+
 php artisan passport:keys
 
 # Run migrations and seed test data

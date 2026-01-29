@@ -25,10 +25,26 @@ class Client extends PassportClient
     protected $casts = [
         'enabled' => 'boolean',
         'revoked' => 'boolean',
+        'grant_types' => 'array',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
+
+    protected function redirectUris(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $value = $this->getAttributes()['redirect_uris'] ?? null;
+                
+                if (!empty($value)) {
+                    return $this->fromJson($value);
+                }
+                
+                return [];
+            }
+        );
+    }
 
     protected function secret(): Attribute
     {

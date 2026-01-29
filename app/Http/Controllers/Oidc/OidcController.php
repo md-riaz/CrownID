@@ -143,6 +143,15 @@ class OidcController extends Controller
             })
             ->first();
 
+        // Check if account is locked before attempting password verification
+        if ($user && $this->rateLimitService->isRateLimited($user)) {
+            $this->auditService->logLoginFailed($realmModel->id, [
+                'username' => $request->input('username'),
+                'reason' => 'account_locked'
+            ], $request);
+            return back()->withErrors(['username' => 'Account is temporarily locked due to multiple failed login attempts']);
+        }
+
         if (!$user || !Hash::check($request->input('password'), $user->password)) {
             if ($user) {
                 $this->rateLimitService->recordLoginAttempt($user, $request->ip(), false);
@@ -154,15 +163,6 @@ class OidcController extends Controller
                 ], $request);
             }
             return back()->withErrors(['username' => 'Invalid credentials']);
-        }
-
-        $user->refresh();
-        if ($this->rateLimitService->isRateLimited($user)) {
-            $this->auditService->logLoginFailed($realmModel->id, [
-                'username' => $request->input('username'),
-                'reason' => 'account_locked'
-            ], $request);
-            return back()->withErrors(['username' => 'Account is temporarily locked due to multiple failed login attempts']);
         }
 
         $this->rateLimitService->recordLoginAttempt($user, $request->ip(), true);

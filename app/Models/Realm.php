@@ -15,6 +15,10 @@ class Realm extends Model
         'refresh_token_lifespan',
         'sso_session_idle_timeout',
         'sso_session_max_lifespan',
+        'mfa_enabled',
+        'brute_force_protected',
+        'max_login_attempts',
+        'lockout_duration_minutes',
     ];
 
     protected $casts = [
@@ -23,6 +27,10 @@ class Realm extends Model
         'refresh_token_lifespan' => 'integer',
         'sso_session_idle_timeout' => 'integer',
         'sso_session_max_lifespan' => 'integer',
+        'mfa_enabled' => 'boolean',
+        'brute_force_protected' => 'boolean',
+        'max_login_attempts' => 'integer',
+        'lockout_duration_minutes' => 'integer',
     ];
 
     public function users(): HasMany

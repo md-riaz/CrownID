@@ -4,7 +4,7 @@ CrownID is a Keycloak-compatible Identity and Access Management (IAM) server bui
 
 ## Features
 
-### Phase 0 - OIDC Core (Current)
+### Phase 0 - OIDC Core (✅ Complete)
 
 - ✅ **OpenID Connect Provider** with all core endpoints:
   - Discovery (`.well-known/openid-configuration`)
@@ -19,6 +19,31 @@ CrownID is a Keycloak-compatible Identity and Access Management (IAM) server bui
 - ✅ **Multi-Realm Support**
 - ✅ **Client Management** (confidential/public)
 - ✅ **User Authentication** with password hashing
+
+### Phase 2 - Admin REST API (✅ Complete)
+
+- ✅ **Realm Management**:
+  - GET /api/admin/realms - List all realms
+  - GET /api/admin/realms/{realm} - Get realm details
+  - POST /api/admin/realms - Create realm
+  - PUT /api/admin/realms/{realm} - Update realm
+  - DELETE /api/admin/realms/{realm} - Delete realm
+
+- ✅ **User Management**:
+  - GET /api/admin/realms/{realm}/users - List users (with pagination & search)
+  - POST /api/admin/realms/{realm}/users - Create user
+  - GET /api/admin/realms/{realm}/users/{id} - Get user details
+  - PUT /api/admin/realms/{realm}/users/{id} - Update user
+  - DELETE /api/admin/realms/{realm}/users/{id} - Delete user
+
+- ✅ **Client Management**:
+  - GET /api/admin/realms/{realm}/clients - List clients
+  - POST /api/admin/realms/{realm}/clients - Create client
+  - GET /api/admin/realms/{realm}/clients/{id} - Get client details
+  - PUT /api/admin/realms/{realm}/clients/{id} - Update client
+  - DELETE /api/admin/realms/{realm}/clients/{id} - Delete client
+
+- ✅ **Keycloak-Compatible JSON Representations**
 
 ## Quick Start
 
@@ -87,6 +112,23 @@ See [OIDC_TESTING.md](OIDC_TESTING.md) for detailed testing instructions includi
 ```bash
 # Test discovery endpoint
 curl http://localhost:8000/realms/master/.well-known/openid-configuration | jq
+
+# Test admin API - List realms
+curl http://localhost:8000/api/admin/realms | jq
+
+# Create a new user
+curl -X POST http://localhost:8000/api/admin/realms/master/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "firstName": "Test",
+    "lastName": "User",
+    "credentials": [{
+      "type": "password",
+      "value": "password123"
+    }]
+  }' | jq
 ```
 
 ## Development
@@ -105,25 +147,36 @@ composer dev
 app/
 ├── Http/
 │   ├── Controllers/
+│   │   ├── Admin/
+│   │   │   ├── RealmController.php    # Realm CRUD
+│   │   │   ├── UserController.php     # User CRUD + search
+│   │   │   └── ClientController.php   # Client CRUD
 │   │   └── Oidc/
-│   │       └── OidcController.php    # OIDC endpoints
-│   └── Middleware/
-│       └── RealmExists.php           # Realm validation
+│   │       └── OidcController.php     # OIDC endpoints
+│   ├── Middleware/
+│   │   └── RealmExists.php            # Realm validation
+│   ├── Requests/Admin/                # Form validation
+│   └── Resources/                     # JSON resources
+│       ├── RealmResource.php
+│       ├── UserResource.php
+│       └── ClientResource.php
 ├── Models/
-│   ├── Realm.php                     # Multi-tenancy
-│   ├── Client.php                    # OAuth2 clients
-│   └── User.php                      # User accounts
+│   ├── Realm.php                      # Multi-tenancy
+│   ├── Client.php                     # OAuth2 clients
+│   └── User.php                       # User accounts
 └── Services/
-    └── JwtService.php                # JWT token management
+    └── JwtService.php                 # JWT token management
 
-database/
-├── migrations/                       # Database schema
-└── seeders/
-    └── OidcTestSeeder.php           # Test data
+routes/
+├── api.php                            # Admin REST API
+└── web.php                            # OIDC endpoints
 
 tests/
 └── Feature/
-    └── OidcEndpointsTest.php        # OIDC endpoint tests
+    ├── OidcEndpointsTest.php         # OIDC tests
+    ├── AdminRealmApiTest.php         # Realm API tests
+    ├── AdminUserApiTest.php          # User API tests
+    └── AdminClientApiTest.php        # Client API tests
 ```
 
 ## Keycloak Compatibility
@@ -131,9 +184,11 @@ tests/
 CrownID implements Keycloak's external contracts:
 
 1. **OIDC Endpoints**: Same URL structure (`/realms/{realm}/protocol/openid-connect/*`)
-2. **Discovery Format**: Compatible JSON response structure
-3. **JWT Claims**: Standard OIDC claims (sub, iss, aud, exp, etc.)
-4. **Token Types**: RS256-signed JWTs for access and ID tokens
+2. **Admin REST API**: Keycloak-compatible paths (`/api/admin/realms/*`)
+3. **Discovery Format**: Compatible JSON response structure
+4. **JWT Claims**: Standard OIDC claims (sub, iss, aud, exp, etc.)
+5. **Token Types**: RS256-signed JWTs for access and ID tokens
+6. **JSON Representations**: Keycloak-style resource formatting
 
 ### Compatibility Target
 
@@ -145,22 +200,29 @@ CrownID implements Keycloak's external contracts:
 
 See [Plan.md](Plan.md) for the complete development plan.
 
-### Q1 2026 - Phase 0 (✅ Current)
+### Q1 2026 - Phase 0 (✅ Complete)
 - [x] OIDC Core endpoints
 - [x] Basic SSO session
 - [x] JWT token generation (RS256)
 - [x] Multi-realm support
 
-### Q2 2026 - Phase 1
+### Q2 2026 - Phase 2 (✅ Complete)
+- [x] Admin REST API
+- [x] Realm, User, and Client management
+- [x] Keycloak-compatible JSON representations
+- [x] Pagination and search
+- [x] Comprehensive test suite
+
+### Q2-Q3 2026 - Phase 1 (Next)
 - [ ] Roles and Groups
 - [ ] Keycloak-style claims (`realm_access`, `resource_access`)
 - [ ] Group hierarchy
 - [ ] Role mappings
 
-### Q3 2026 - Phase 2/3
-- [ ] Admin REST API
+### Q3 2026 - Phase 3
 - [ ] Realm import/export
-- [ ] Keycloak-compatible JSON representations
+- [ ] Bulk operations
+- [ ] Client scopes
 
 ### Q4 2026 - Phase 4
 - [ ] Required actions (email verification, password reset)

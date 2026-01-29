@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Passport\Client as PassportClient;
 
@@ -15,6 +16,7 @@ class Client extends PassportClient
         'name',
         'secret',
         'redirect_uris',
+        'grant_types',
         'client_type',
         'enabled',
         'revoked',
@@ -27,6 +29,14 @@ class Client extends PassportClient
 
     protected $keyType = 'string';
     public $incrementing = false;
+
+    protected function secret(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value,
+            set: fn ($value) => $value,
+        );
+    }
 
     public function realm(): BelongsTo
     {

@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\Admin\RealmController;
+use App\Http\Controllers\Admin\RealmExportController;
+use App\Http\Controllers\Admin\RealmImportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserGroupController;
@@ -13,10 +15,13 @@ Route::prefix('admin')->group(function () {
     Route::prefix('realms')->group(function () {
         Route::get('/', [RealmController::class, 'index']);
         Route::post('/', [RealmController::class, 'store']);
+        Route::post('/import', [RealmImportController::class, 'import']);
+        Route::post('/import-directory', [RealmImportController::class, 'importDirectory']);
         
         Route::get('/{realm}', [RealmController::class, 'show']);
         Route::put('/{realm}', [RealmController::class, 'update']);
         Route::delete('/{realm}', [RealmController::class, 'destroy']);
+        Route::get('/{realm}/export', [RealmExportController::class, 'export']);
         
         Route::prefix('/{realm}/users')->group(function () {
             Route::get('/', [UserController::class, 'index']);

@@ -45,6 +45,204 @@ CrownID is a Keycloak-compatible Identity and Access Management (IAM) server bui
 
 - ✅ **Keycloak-Compatible JSON Representations**
 
+## 📸 Preview & Screenshots
+
+### User Interface Pages
+
+#### 1. Login Page (Unauthenticated)
+The main authentication page where users sign in to access protected resources through the OAuth 2.0 Authorization Code flow.
+
+![Login Page](https://github.com/user-attachments/assets/f244d19d-a9b6-415c-80f3-caeab2dc2464)
+
+**Features:**
+- Clean, modern design with gradient background
+- Realm name display (Master)
+- Client application name display
+- Username/email and password fields
+- Error message display support
+- Responsive layout
+
+**Keycloak Comparison:**
+- **URL Structure**: Identical `/realms/{realm}/protocol/openid-connect/auth`
+- **Design**: Custom modern UI vs Keycloak's default theme
+- **Functionality**: Same OAuth 2.0 flow, SSO session management
+- **Branding**: Customizable per realm (similar to Keycloak themes)
+
+---
+
+#### 2. Two-Factor Authentication (MFA) Challenge
+Displayed after successful password authentication when MFA is enabled for the user.
+
+**Features:**
+- 6-digit verification code input
+- Support for TOTP authenticator apps
+- Backup code support
+- Clean, focused interface
+- Real-time code validation
+
+**Keycloak Comparison:**
+- **URL**: `/realms/{realm}/protocol/openid-connect/mfa`
+- **Flow**: Matches Keycloak's MFA flow behavior
+- **TOTP Support**: Compatible with Google Authenticator, Authy, etc.
+- **Backup Codes**: Same functionality as Keycloak
+- **Design**: Modernized version of Keycloak's MFA page
+
+---
+
+#### 3. Required Actions Page
+Users are directed here when mandatory actions must be completed before accessing the application.
+
+**Features:**
+- Multiple action types: Email verification, Password update, TOTP configuration
+- Clear action descriptions
+- Individual action completion buttons
+- Progress tracking
+- Cannot proceed until all actions completed
+
+**Keycloak Comparison:**
+- **URL**: `/realms/{realm}/protocol/openid-connect/required-action`
+- **Actions**: Same action types as Keycloak
+- **Flow**: Identical behavior - blocks authentication until completion
+- **API**: Compatible with Keycloak's required actions management
+- **Design**: Modern card-based UI vs Keycloak's list view
+
+---
+
+### API Endpoints & Responses
+
+#### OIDC Discovery Endpoint
+
+**Endpoint:** `GET /realms/{realm}/.well-known/openid-configuration`
+
+**Sample Response:**
+```json
+{
+    "issuer": "http://localhost/realms/master",
+    "authorization_endpoint": "http://localhost/realms/master/protocol/openid-connect/auth",
+    "token_endpoint": "http://localhost/realms/master/protocol/openid-connect/token",
+    "userinfo_endpoint": "http://localhost/realms/master/protocol/openid-connect/userinfo",
+    "end_session_endpoint": "http://localhost/realms/master/protocol/openid-connect/logout",
+    "jwks_uri": "http://localhost/realms/master/protocol/openid-connect/certs",
+    "response_types_supported": ["code"],
+    "subject_types_supported": ["public"],
+    "id_token_signing_alg_values_supported": ["RS256"],
+    "grant_types_supported": ["authorization_code", "refresh_token"],
+    "scopes_supported": ["openid", "profile", "email"],
+    "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post"],
+    "claims_supported": ["sub", "iss", "aud", "exp", "iat", "auth_time", "nonce", "email", "email_verified", "preferred_username", "name"]
+}
+```
+
+**Keycloak Comparison:**
+- ✅ **Same URL structure**
+- ✅ **All required OIDC fields present**
+- ✅ **Compatible response format**
+- ✅ **Standard-compliant (OpenID Connect Discovery 1.0)**
+
+---
+
+#### Admin API - List Realms
+
+**Endpoint:** `GET /api/admin/realms`
+
+**Sample Response:**
+```json
+{
+    "data": [
+        {
+            "id": "1",
+            "realm": "master",
+            "displayName": "Master",
+            "enabled": true,
+            "accessTokenLifespan": 300,
+            "refreshTokenLifespan": 1800,
+            "ssoSessionIdleTimeout": 1800,
+            "ssoSessionMaxLifespan": 36000
+        }
+    ]
+}
+```
+
+**Keycloak Comparison:**
+- ✅ **Same endpoint path**: `/api/admin/realms`
+- ✅ **Compatible JSON field names** (camelCase format)
+- ✅ **Same realm configuration options**
+- ⚠️ **Minor differences**: CrownID uses simpler response wrapper, Keycloak includes more metadata
+
+---
+
+#### Admin API - List Users
+
+**Endpoint:** `GET /api/admin/realms/{realm}/users`
+
+**Sample Response:**
+```json
+[
+    {
+        "id": "1",
+        "username": "admin",
+        "email": "admin@crownid.local",
+        "firstName": "Admin",
+        "lastName": "User",
+        "enabled": true,
+        "emailVerified": true,
+        "attributes": [],
+        "createdTimestamp": 1769661020000
+    }
+]
+```
+
+**Keycloak Comparison:**
+- ✅ **Same endpoint path**: `/api/admin/realms/{realm}/users`
+- ✅ **Compatible user representation**
+- ✅ **Support for pagination & search** (via query parameters)
+- ✅ **Same field names and types**
+- ⚠️ **Timestamp format**: Unix milliseconds (Keycloak standard)
+
+---
+
+### Key Differences from Keycloak
+
+#### Advantages of CrownID:
+1. **Modern UI**: Clean, responsive design with gradient backgrounds
+2. **Laravel Ecosystem**: Full access to Laravel packages and features
+3. **Lightweight**: Simpler codebase, easier to customize
+4. **SQLite Support**: Easy local development without database setup
+5. **API-First**: RESTful API design with clear separation
+
+#### Keycloak Features Not Yet Implemented:
+1. **Admin Console UI**: CrownID focuses on API, Keycloak has full web UI
+2. **SAML Support**: CrownID is OIDC-only currently
+3. **User Federation**: LDAP/Active Directory integration
+4. **Identity Brokering**: Social login (Google, Facebook, etc.)
+5. **Advanced Mappers**: Protocol mappers, claim transformations
+6. **Clustering**: Multi-node deployment support
+
+#### API Compatibility:
+- ✅ **OIDC Core 1.0**: Fully compatible
+- ✅ **OAuth 2.0**: Authorization code flow
+- ✅ **Admin REST API**: Core endpoints compatible
+- ✅ **JSON Format**: Keycloak-style representations
+- ⚠️ **Coverage**: ~40% of Keycloak Admin API (core features only)
+
+---
+
+### Testing the UI
+
+```bash
+# Start the development server
+php artisan serve
+
+# Navigate to the login page
+open http://localhost:8000/realms/master/protocol/openid-connect/auth?client_id={client-id}&redirect_uri=http://localhost:8000/callback&response_type=code&scope=openid&state=test&nonce=test
+```
+
+**Default Test Credentials:**
+- Username: `admin@crownid.local`
+- Password: `password`
+
+See [OIDC_TESTING.md](OIDC_TESTING.md) for complete testing instructions.
+
 ## Quick Start
 
 ### Requirements

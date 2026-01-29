@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "240481111d715ac69e91d7834b6ee0a3",
+    "content-hash": "60882f98749bd9c23a333a7ca6f0b5c5",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1288,6 +1288,199 @@
             "time": "2025-08-22T14:27:06+00:00"
         },
         {
+            "name": "hasinhayder/tyro",
+            "version": "v1.2.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hasinhayder/tyro.git",
+                "reference": "1f5e16f736aa44cb2cbfa1dba0f51c7911ab2e02"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hasinhayder/tyro/zipball/1f5e16f736aa44cb2cbfa1dba0f51c7911ab2e02",
+                "reference": "1f5e16f736aa44cb2cbfa1dba0f51c7911ab2e02",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^12.0",
+                "laravel/sanctum": "^4.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.25",
+                "nunomaduro/collision": "^8.6",
+                "orchestra/testbench": "^10.0",
+                "pestphp/pest": "^3.0",
+                "pestphp/pest-plugin-laravel": "^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "HasinHayder\\Tyro\\Providers\\TyroServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "HasinHayder\\Tyro\\": "src/"
+                },
+                "classmap": [
+                    "database/seeders",
+                    "database/factories"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Tyro - The ultimate Authentication, Authorization, and Role & Privilege Management solution for Laravel 12",
+            "keywords": [
+                "Authentication",
+                "acl",
+                "api",
+                "authorization",
+                "laravel",
+                "permissions",
+                "privileges",
+                "rbac",
+                "roles",
+                "sanctum"
+            ],
+            "support": {
+                "issues": "https://github.com/hasinhayder/tyro/issues",
+                "source": "https://github.com/hasinhayder/tyro/tree/v1.2.3"
+            },
+            "time": "2026-01-18T13:46:23+00:00"
+        },
+        {
+            "name": "hasinhayder/tyro-dashboard",
+            "version": "v1.6.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hasinhayder/tyro-dashboard.git",
+                "reference": "6f324386b7b83ca7cf0af85e7336a7be6172d6ba"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hasinhayder/tyro-dashboard/zipball/6f324386b7b83ca7cf0af85e7336a7be6172d6ba",
+                "reference": "6f324386b7b83ca7cf0af85e7336a7be6172d6ba",
+                "shasum": ""
+            },
+            "require": {
+                "hasinhayder/tyro": "^1.2",
+                "hasinhayder/tyro-login": "^2.0",
+                "laravel/framework": "^12.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.25",
+                "nunomaduro/collision": "^8.6",
+                "orchestra/testbench": "^10.0",
+                "pestphp/pest": "^3.0",
+                "pestphp/pest-plugin-laravel": "^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "HasinHayder\\TyroDashboard\\Providers\\TyroDashboardServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "HasinHayder\\TyroDashboard\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Tyro Dashboard - Beautiful admin dashboard for managing Tyro roles, privileges, users, and settings",
+            "keywords": [
+                "Settings",
+                "Users",
+                "admin",
+                "blade",
+                "dashboard",
+                "laravel",
+                "privileges",
+                "roles",
+                "tyro"
+            ],
+            "support": {
+                "issues": "https://github.com/hasinhayder/tyro-dashboard/issues",
+                "source": "https://github.com/hasinhayder/tyro-dashboard/tree/v1.6.0"
+            },
+            "time": "2026-01-28T18:34:48+00:00"
+        },
+        {
+            "name": "hasinhayder/tyro-login",
+            "version": "v2.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hasinhayder/tyro-login.git",
+                "reference": "d89c00103058ad12989f5a790f1c29fa03e43c79"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/hasinhayder/tyro-login/zipball/d89c00103058ad12989f5a790f1c29fa03e43c79",
+                "reference": "d89c00103058ad12989f5a790f1c29fa03e43c79",
+                "shasum": ""
+            },
+            "require": {
+                "bacon/bacon-qr-code": "^3.0",
+                "laravel/framework": "^12.0",
+                "php": "^8.2",
+                "pragmarx/google2fa": "^9.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.25",
+                "nunomaduro/collision": "^8.6",
+                "orchestra/testbench": "^10.0",
+                "pestphp/pest": "^3.0",
+                "pestphp/pest-plugin-laravel": "^3.0"
+            },
+            "suggest": {
+                "laravel/socialite": "Required for social login functionality (^5.0)"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "HasinHayder\\TyroLogin\\Providers\\TyroLoginServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "HasinHayder\\TyroLogin\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Tyro Login - Beautiful, customizable authentication views for Laravel 12",
+            "keywords": [
+                "Authentication",
+                "auth",
+                "blade",
+                "laravel",
+                "login",
+                "oauth",
+                "register",
+                "socialite",
+                "ui"
+            ],
+            "support": {
+                "issues": "https://github.com/hasinhayder/tyro-login/issues",
+                "source": "https://github.com/hasinhayder/tyro-login/tree/v2.1.0"
+            },
+            "time": "2026-01-28T06:00:06+00:00"
+        },
+        {
             "name": "laravel/fortify",
             "version": "v1.34.0",
             "source": {
@@ -1705,6 +1898,69 @@
                 "source": "https://github.com/laravel/prompts/tree/v0.3.11"
             },
             "time": "2026-01-27T02:55:06+00:00"
+        },
+        {
+            "name": "laravel/sanctum",
+            "version": "v4.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/sanctum.git",
+                "reference": "c978c82b2b8ab685468a7ca35224497d541b775a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/sanctum/zipball/c978c82b2b8ab685468a7ca35224497d541b775a",
+                "reference": "c978c82b2b8ab685468a7ca35224497d541b775a",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "illuminate/console": "^11.0|^12.0",
+                "illuminate/contracts": "^11.0|^12.0",
+                "illuminate/database": "^11.0|^12.0",
+                "illuminate/support": "^11.0|^12.0",
+                "php": "^8.2",
+                "symfony/console": "^7.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "orchestra/testbench": "^9.15|^10.8",
+                "phpstan/phpstan": "^1.10"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Laravel\\Sanctum\\SanctumServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\Sanctum\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                }
+            ],
+            "description": "Laravel Sanctum provides a featherweight authentication system for SPAs and simple APIs.",
+            "keywords": [
+                "auth",
+                "laravel",
+                "sanctum"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/sanctum/issues",
+                "source": "https://github.com/laravel/sanctum"
+            },
+            "time": "2026-01-22T22:27:01+00:00"
         },
         {
             "name": "laravel/serializable-closure",

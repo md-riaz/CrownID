@@ -27,3 +27,12 @@ Route::middleware(['web', \App\Http\Middleware\RealmExists::class])
             Route::post('/required-action', [OidcController::class, 'completeRequiredAction']);
         });
     });
+
+// Admin UI Routes
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [App\Http\Controllers\AdminUI\DashboardController::class, 'index'])->name('dashboard');
+    
+    Route::resource('realms', App\Http\Controllers\AdminUI\RealmManagementController::class);
+    Route::resource('users', App\Http\Controllers\AdminUI\UserManagementController::class);
+    Route::resource('clients', App\Http\Controllers\AdminUI\ClientManagementController::class);
+});

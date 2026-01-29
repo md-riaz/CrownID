@@ -41,12 +41,17 @@ class Group extends Model
         return $this->belongsToMany(Role::class, 'crownid_role_group');
     }
 
-    public function getAllRoles(): array
+    public function getAllRoles(array &$visited = []): array
     {
+        if (in_array($this->id, $visited)) {
+            return [];  // Circular dependency detected
+        }
+        
+        $visited[] = $this->id;
         $roles = $this->roles->pluck('name')->toArray();
         
         if ($this->parent) {
-            $roles = array_merge($roles, $this->parent->getAllRoles());
+            $roles = array_merge($roles, $this->parent->getAllRoles($visited));
         }
         
         return array_unique($roles);

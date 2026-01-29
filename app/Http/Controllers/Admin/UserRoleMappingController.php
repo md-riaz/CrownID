@@ -55,7 +55,7 @@ class UserRoleMappingController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            '*.id' => 'required|exists:roles,id',
+            '*.id' => 'required|exists:crownid_roles,id',
             '*.name' => 'required|string',
         ]);
 
@@ -78,7 +78,7 @@ class UserRoleMappingController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            '*.id' => 'required|exists:roles,id',
+            '*.id' => 'required|exists:crownid_roles,id',
             '*.name' => 'required|string',
         ]);
 
@@ -97,7 +97,7 @@ class UserRoleMappingController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            '*.id' => 'required|exists:roles,id',
+            '*.id' => 'required|exists:crownid_roles,id',
             '*.name' => 'required|string',
         ]);
 
@@ -119,7 +119,7 @@ class UserRoleMappingController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            '*.id' => 'required|exists:roles,id',
+            '*.id' => 'required|exists:crownid_roles,id',
             '*.name' => 'required|string',
         ]);
 

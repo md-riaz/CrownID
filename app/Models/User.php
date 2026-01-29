@@ -72,6 +72,8 @@ class User extends Authenticatable
 
     public function getAllRoles(): array
     {
+        $this->load('directRoles', 'groups.roles', 'groups.parent');
+        
         $roles = $this->directRoles->all();
         
         foreach ($this->groups as $group) {

@@ -49,6 +49,11 @@ class UserGroupController extends Controller
         $user = User::where('realm_id', $realmModel->id)
             ->where('id', $userId)
             ->firstOrFail();
+        
+        // Verify group belongs to realm
+        $group = Group::where('realm_id', $realmModel->id)
+            ->where('id', $groupId)
+            ->firstOrFail();
 
         $user->groups()->detach($groupId);
 

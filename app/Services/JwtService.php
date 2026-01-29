@@ -52,10 +52,10 @@ class JwtService
 
         $roleClaims = $this->buildRoleClaims($user, $clientId);
         if (!empty($roleClaims['realm_access'])) {
-            $builder->withClaim('realm_access', $roleClaims['realm_access']);
+            $builder = $builder->withClaim('realm_access', $roleClaims['realm_access']);
         }
         if (!empty($roleClaims['resource_access'])) {
-            $builder->withClaim('resource_access', $roleClaims['resource_access']);
+            $builder = $builder->withClaim('resource_access', $roleClaims['resource_access']);
         }
 
         return $builder->getToken($this->config->signer(), $this->config->signingKey())->toString();
@@ -83,10 +83,10 @@ class JwtService
 
         $roleClaims = $this->buildRoleClaims($user, $clientId);
         if (!empty($roleClaims['realm_access'])) {
-            $builder->withClaim('realm_access', $roleClaims['realm_access']);
+            $builder = $builder->withClaim('realm_access', $roleClaims['realm_access']);
         }
         if (!empty($roleClaims['resource_access'])) {
-            $builder->withClaim('resource_access', $roleClaims['resource_access']);
+            $builder = $builder->withClaim('resource_access', $roleClaims['resource_access']);
         }
 
         return $builder->getToken($this->config->signer(), $this->config->signingKey())->toString();

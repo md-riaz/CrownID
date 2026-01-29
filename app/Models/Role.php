@@ -62,13 +62,18 @@ class Role extends Model
         return $this->client_id !== null;
     }
 
-    public function expandComposite(): array
+    public function expandComposite(array &$visited = []): array
     {
+        if (in_array($this->id, $visited)) {
+            return [];  // Circular dependency detected
+        }
+        
+        $visited[] = $this->id;
         $roles = [$this->name];
         
         if ($this->composite) {
             foreach ($this->childRoles as $childRole) {
-                $roles = array_merge($roles, $childRole->expandComposite());
+                $roles = array_merge($roles, $childRole->expandComposite($visited));
             }
         }
         

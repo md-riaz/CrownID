@@ -1,59 +1,212 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CrownID - Keycloak-Compatible IAM Server
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+CrownID is a Keycloak-compatible Identity and Access Management (IAM) server built with Laravel. It provides OpenID Connect (OIDC) authentication and authorization services with a focus on external API compatibility with Keycloak.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Phase 0 - OIDC Core (Current)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- ✅ **OpenID Connect Provider** with all core endpoints:
+  - Discovery (`.well-known/openid-configuration`)
+  - JWKS (public key distribution)
+  - Authorization (OAuth 2.0 authorization code flow)
+  - Token (code to token exchange)
+  - Userinfo (user claims)
+  - Logout (session termination)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- ✅ **JWT Token Generation** with RS256 signing
+- ✅ **SSO Session Management**
+- ✅ **Multi-Realm Support**
+- ✅ **Client Management** (confidential/public)
+- ✅ **User Authentication** with password hashing
 
-## Learning Laravel
+## Quick Start
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Requirements
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP 8.2+
+- Composer
+- SQLite (for development) or PostgreSQL (for production)
+- Node.js & NPM
 
-## Laravel Sponsors
+### Installation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+# Clone repository
+git clone https://github.com/md-riaz/CrownID.git
+cd CrownID
 
-### Premium Partners
+# Install dependencies
+composer install
+npm install
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Setup environment
+cp .env.example .env
+php artisan key:generate
 
-## Contributing
+# Generate OAuth keys
+php artisan passport:keys
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Run migrations and seed test data
+php artisan migrate:fresh --seeder=OidcTestSeeder
 
-## Code of Conduct
+# Build assets
+npm run build
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Start development server
+php artisan serve
+```
 
-## Security Vulnerabilities
+### Test Data
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The `OidcTestSeeder` creates:
+- **Realm**: `master`
+- **User**: `admin@crownid.local` / Password: `admin`
+- **Client**: `test-client` / Secret: `test-secret`
+- **Redirect URIs**: `http://localhost:3000/callback`, `http://localhost:8080/callback`
+
+## Testing
+
+### Run Test Suite
+
+```bash
+php artisan test
+```
+
+### Manual OIDC Flow Testing
+
+See [OIDC_TESTING.md](OIDC_TESTING.md) for detailed testing instructions including:
+- Discovery endpoint
+- Authorization code flow (step-by-step)
+- Token exchange
+- Userinfo endpoint
+- JWT token validation
+
+### Quick Test
+
+```bash
+# Test discovery endpoint
+curl http://localhost:8000/realms/master/.well-known/openid-configuration | jq
+```
+
+## Development
+
+```bash
+# Run tests
+composer test
+
+# Run with hot reload and logging
+composer dev
+```
+
+## Project Structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/
+│   │   └── Oidc/
+│   │       └── OidcController.php    # OIDC endpoints
+│   └── Middleware/
+│       └── RealmExists.php           # Realm validation
+├── Models/
+│   ├── Realm.php                     # Multi-tenancy
+│   ├── Client.php                    # OAuth2 clients
+│   └── User.php                      # User accounts
+└── Services/
+    └── JwtService.php                # JWT token management
+
+database/
+├── migrations/                       # Database schema
+└── seeders/
+    └── OidcTestSeeder.php           # Test data
+
+tests/
+└── Feature/
+    └── OidcEndpointsTest.php        # OIDC endpoint tests
+```
+
+## Keycloak Compatibility
+
+CrownID implements Keycloak's external contracts:
+
+1. **OIDC Endpoints**: Same URL structure (`/realms/{realm}/protocol/openid-connect/*`)
+2. **Discovery Format**: Compatible JSON response structure
+3. **JWT Claims**: Standard OIDC claims (sub, iss, aud, exp, etc.)
+4. **Token Types**: RS256-signed JWTs for access and ID tokens
+
+### Compatibility Target
+
+- Keycloak version: Latest stable (validated via future golden tests)
+- OpenID Connect Core 1.0
+- OAuth 2.0 RFC 6749
+
+## Roadmap
+
+See [Plan.md](Plan.md) for the complete development plan.
+
+### Q1 2026 - Phase 0 (✅ Current)
+- [x] OIDC Core endpoints
+- [x] Basic SSO session
+- [x] JWT token generation (RS256)
+- [x] Multi-realm support
+
+### Q2 2026 - Phase 1
+- [ ] Roles and Groups
+- [ ] Keycloak-style claims (`realm_access`, `resource_access`)
+- [ ] Group hierarchy
+- [ ] Role mappings
+
+### Q3 2026 - Phase 2/3
+- [ ] Admin REST API
+- [ ] Realm import/export
+- [ ] Keycloak-compatible JSON representations
+
+### Q4 2026 - Phase 4
+- [ ] Required actions (email verification, password reset)
+- [ ] TOTP MFA
+- [ ] Rate limiting / brute-force protection
+- [ ] Audit event log
+
+## Documentation
+
+- [OIDC Testing Guide](OIDC_TESTING.md) - Manual endpoint testing
+- [Plan.md](Plan.md) - Complete project specification
+- [Contributing Guidelines](CONTRIBUTING.md) - Coming soon
+
+## Security
+
+- Uses RS256 asymmetric signing for JWTs
+- Client secrets stored in plain text (OAuth 2.0 standard)
+- Authorization codes expire in 90 seconds (RFC 6749 recommendation)
+- Single-use authorization codes with revocation tracking
+- Constant-time secret comparison
+
+**Important**: For production use:
+- Use PostgreSQL instead of SQLite
+- Enable Redis for sessions and caching
+- Configure proper key rotation
+- Set up HTTPS with valid certificates
+- Review and update security configurations
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License - see [LICENSE](LICENSE) file
+
+## Credits
+
+Built with:
+- [Laravel 12](https://laravel.com)
+- [Laravel Passport](https://laravel.com/docs/passport) - OAuth2 server
+- [Laravel Fortify](https://laravel.com/docs/fortify) - Authentication
+- [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission) - RBAC
+- [lcobucci/jwt](https://github.com/lcobucci/jwt) - JWT handling
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Support
+
+- Issues: [GitHub Issues](https://github.com/md-riaz/CrownID/issues)
+- Documentation: [Wiki](https://github.com/md-riaz/CrownID/wiki)

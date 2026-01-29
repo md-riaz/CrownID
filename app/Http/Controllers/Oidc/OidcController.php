@@ -225,7 +225,7 @@ class OidcController extends Controller
     protected function issueAuthorizationCode(Realm $realm, Client $client, User $user, string $redirectUri, string $scope, string $state, ?string $nonce)
     {
         $code = Str::random(64);
-        $expiresAt = now()->addMinutes(5);
+        $expiresAt = now()->addSeconds(90);
 
         DB::table('oauth_auth_codes')->insert([
             'id' => $code,
@@ -267,6 +267,7 @@ class OidcController extends Controller
 
         if ($codeData['expires_at'] < time()) {
             session()->forget('oidc_code_' . $code);
+            DB::table('oauth_auth_codes')->where('id', $code)->update(['revoked' => true]);
             return response()->json(['error' => 'invalid_grant', 'error_description' => 'Authorization code expired'], 400);
         }
 
@@ -288,6 +289,7 @@ class OidcController extends Controller
         }
 
         session()->forget('oidc_code_' . $code);
+        DB::table('oauth_auth_codes')->where('id', $code)->update(['revoked' => true]);
 
         $scopes = explode(' ', $codeData['scope']);
         $accessToken = $this->jwtService->createAccessToken($user, $realm, $clientId, $scopes);

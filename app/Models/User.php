@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
@@ -57,5 +58,43 @@ class User extends Authenticatable
     public function realm(): BelongsTo
     {
         return $this->belongsTo(Realm::class);
+    }
+
+    public function directRoles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'crownid_role_user');
+    }
+
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_user');
+    }
+
+    public function getAllRoles(): array
+    {
+        $roles = $this->directRoles->all();
+        
+        foreach ($this->groups as $group) {
+            $groupRoles = $group->roles;
+            if ($group->parent) {
+                $parentRoleNames = $group->parent->getAllRoles();
+                $parentRoleModels = Role::whereIn('name', $parentRoleNames)
+                    ->where('realm_id', $this->realm_id)
+                    ->get();
+                $groupRoles = $groupRoles->merge($parentRoleModels);
+            }
+            $roles = array_merge($roles, $groupRoles->all());
+        }
+        
+        $uniqueRoles = [];
+        $seen = [];
+        foreach ($roles as $role) {
+            if (!in_array($role->id, $seen)) {
+                $uniqueRoles[] = $role;
+                $seen[] = $role->id;
+            }
+        }
+        
+        return $uniqueRoles;
     }
 }

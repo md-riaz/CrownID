@@ -34,4 +34,14 @@ class Realm extends Model
     {
         return $this->hasMany(Client::class);
     }
+
+    public function roles(): HasMany
+    {
+        return $this->hasMany(Role::class);
+    }
+
+    public function groups(): HasMany
+    {
+        return $this->hasMany(Group::class);
+    }
 }

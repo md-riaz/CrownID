@@ -50,6 +50,14 @@ class JwtService
             $builder->withClaim('name', $user->name);
         }
 
+        $roleClaims = $this->buildRoleClaims($user, $clientId);
+        if (!empty($roleClaims['realm_access'])) {
+            $builder->withClaim('realm_access', $roleClaims['realm_access']);
+        }
+        if (!empty($roleClaims['resource_access'])) {
+            $builder->withClaim('resource_access', $roleClaims['resource_access']);
+        }
+
         return $builder->getToken($this->config->signer(), $this->config->signingKey())->toString();
     }
 
@@ -72,6 +80,14 @@ class JwtService
             ->withClaim('scope', implode(' ', $scopes))
             ->withHeader('kid', $this->getKid())
             ->withHeader('typ', 'JWT');
+
+        $roleClaims = $this->buildRoleClaims($user, $clientId);
+        if (!empty($roleClaims['realm_access'])) {
+            $builder->withClaim('realm_access', $roleClaims['realm_access']);
+        }
+        if (!empty($roleClaims['resource_access'])) {
+            $builder->withClaim('resource_access', $roleClaims['resource_access']);
+        }
 
         return $builder->getToken($this->config->signer(), $this->config->signingKey())->toString();
     }
@@ -148,5 +164,56 @@ class JwtService
     protected function getIssuer(Realm $realm): string
     {
         return config('app.url') . '/realms/' . $realm->name;
+    }
+
+    protected function buildRoleClaims(User $user, string $clientId): array
+    {
+        $allRoles = $user->getAllRoles();
+        
+        $realmRoles = [];
+        $clientRolesMap = [];
+        
+        foreach ($allRoles as $role) {
+            $expandedRoles = $role->expandComposite();
+            
+            if ($role->isRealmRole()) {
+                $realmRoles = array_merge($realmRoles, $expandedRoles);
+            } else {
+                $client = $role->client;
+                if ($client) {
+                    if (!isset($clientRolesMap[$client->id])) {
+                        $clientRolesMap[$client->id] = [];
+                    }
+                    $clientRolesMap[$client->id] = array_merge(
+                        $clientRolesMap[$client->id],
+                        $expandedRoles
+                    );
+                }
+            }
+        }
+        
+        $realmRoles = array_unique($realmRoles);
+        
+        $result = [];
+        
+        if (!empty($realmRoles)) {
+            $result['realm_access'] = [
+                'roles' => array_values($realmRoles)
+            ];
+        }
+        
+        if (!empty($clientRolesMap)) {
+            $result['resource_access'] = [];
+            foreach ($clientRolesMap as $cid => $roles) {
+                $client = \App\Models\Client::find($cid);
+                if ($client) {
+                    $result['resource_access'][$client->id] = [
+                        'roles' => array_values(array_unique($roles))
+                    ];
+                }
+            }
+        }
+        
+        return $result;
     }
 }

@@ -1,14 +1,17 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditEventController;
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\GroupController;
 use App\Http\Controllers\Admin\RealmController;
 use App\Http\Controllers\Admin\RealmExportController;
 use App\Http\Controllers\Admin\RealmImportController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserActionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserGroupController;
 use App\Http\Controllers\Admin\UserRoleMappingController;
+use App\Http\Controllers\Admin\UserSessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->group(function () {
@@ -22,6 +25,7 @@ Route::prefix('admin')->group(function () {
         Route::put('/{realm}', [RealmController::class, 'update']);
         Route::delete('/{realm}', [RealmController::class, 'destroy']);
         Route::get('/{realm}/export', [RealmExportController::class, 'export']);
+        Route::get('/{realm}/events', [AuditEventController::class, 'index']);
         
         Route::prefix('/{realm}/users')->group(function () {
             Route::get('/', [UserController::class, 'index']);
@@ -42,6 +46,17 @@ Route::prefix('admin')->group(function () {
                 Route::get('/', [UserGroupController::class, 'index']);
                 Route::post('/', [UserGroupController::class, 'store']);
                 Route::delete('/{groupId}', [UserGroupController::class, 'destroy']);
+            });
+            
+            Route::prefix('/{id}/required-actions')->group(function () {
+                Route::get('/', [UserActionController::class, 'getRequiredActions']);
+                Route::post('/', [UserActionController::class, 'addRequiredAction']);
+                Route::delete('/{action}', [UserActionController::class, 'removeRequiredAction']);
+            });
+            
+            Route::prefix('/{id}/sessions')->group(function () {
+                Route::get('/', [UserSessionController::class, 'getSessions']);
+                Route::delete('/', [UserSessionController::class, 'deleteSessions']);
             });
         });
         

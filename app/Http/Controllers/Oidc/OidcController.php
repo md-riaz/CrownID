@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Oidc;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Realm;
+use App\Models\RequiredAction;
 use App\Models\User;
+use App\Services\AuditService;
 use App\Services\JwtService;
+use App\Services\RateLimitService;
+use App\Services\TwoFactorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,8 +19,12 @@ use Illuminate\Support\Str;
 
 class OidcController extends Controller
 {
-    public function __construct(protected JwtService $jwtService)
-    {
+    public function __construct(
+        protected JwtService $jwtService,
+        protected RateLimitService $rateLimitService,
+        protected AuditService $auditService,
+        protected TwoFactorService $twoFactorService
+    ) {
     }
 
     public function discovery(Request $request, string $realm)
@@ -136,11 +144,48 @@ class OidcController extends Controller
             ->first();
 
         if (!$user || !Hash::check($request->input('password'), $user->password)) {
+            if ($user) {
+                $this->rateLimitService->recordLoginAttempt($user, $request->ip(), false);
+                $this->rateLimitService->checkAndLockIfNeeded($user);
+                $user->refresh();
+                $this->auditService->logLoginFailed($realmModel->id, [
+                    'username' => $request->input('username'),
+                    'reason' => 'invalid_credentials'
+                ], $request);
+            }
             return back()->withErrors(['username' => 'Invalid credentials']);
+        }
+
+        $user->refresh();
+        if ($this->rateLimitService->isRateLimited($user)) {
+            $this->auditService->logLoginFailed($realmModel->id, [
+                'username' => $request->input('username'),
+                'reason' => 'account_locked'
+            ], $request);
+            return back()->withErrors(['username' => 'Account is temporarily locked due to multiple failed login attempts']);
+        }
+
+        $this->rateLimitService->recordLoginAttempt($user, $request->ip(), true);
+
+        $pendingActions = $user->requiredActions()
+            ->where('required', true)
+            ->whereNull('completed_at')
+            ->get();
+
+        if ($pendingActions->isNotEmpty()) {
+            session(['oidc_pending_user_' . $realmModel->id => $user->id]);
+            return redirect()->route('oidc.required-action', ['realm' => $realm]);
+        }
+
+        if ($user->hasTwoFactorEnabled()) {
+            session(['oidc_mfa_user_' . $realmModel->id => $user->id]);
+            return redirect()->route('oidc.mfa-challenge', ['realm' => $realm]);
         }
 
         session(['oidc_realm_' . $realmModel->id => $user->id]);
         session()->forget('oidc_auth_request');
+
+        $this->auditService->logLoginSuccess($user->id, $realmModel->id, $request);
 
         $client = Client::find($authRequest['client_id']);
 
@@ -212,6 +257,11 @@ class OidcController extends Controller
         $realmModel = $request->get('realm_model');
         $postLogoutRedirectUri = $request->input('post_logout_redirect_uri');
 
+        $userId = session('oidc_realm_' . $realmModel->id);
+        if ($userId) {
+            $this->auditService->logLogout($userId, $realmModel->id, $request);
+        }
+
         session()->forget('oidc_realm_' . $realmModel->id);
         session()->forget('oidc_auth_request');
 
@@ -220,6 +270,152 @@ class OidcController extends Controller
         }
 
         return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    public function showMfaChallenge(Request $request, string $realm)
+    {
+        $realmModel = $request->get('realm_model');
+        $userId = session('oidc_mfa_user_' . $realmModel->id);
+
+        if (!$userId) {
+            return redirect()->route('oidc.authorize', ['realm' => $realm]);
+        }
+
+        $user = User::find($userId);
+        return view('oidc.mfa-challenge', [
+            'realm' => $realmModel,
+            'user' => $user,
+        ]);
+    }
+
+    public function verifyMfa(Request $request, string $realm)
+    {
+        $request->validate([
+            'code' => 'required|string',
+        ]);
+
+        $realmModel = $request->get('realm_model');
+        $userId = session('oidc_mfa_user_' . $realmModel->id);
+
+        if (!$userId) {
+            abort(400, 'Invalid MFA request');
+        }
+
+        $user = User::find($userId);
+        $authRequest = session('oidc_auth_request');
+
+        if (!$user || !$authRequest) {
+            abort(400, 'Invalid MFA request');
+        }
+
+        $code = $request->input('code');
+        $isValid = $user->verifyTwoFactorCode($code);
+
+        if (!$isValid) {
+            $isValid = $this->twoFactorService->verifyBackupCode($user, $code);
+        }
+
+        if (!$isValid) {
+            return back()->withErrors(['code' => 'Invalid verification code']);
+        }
+
+        session()->forget('oidc_mfa_user_' . $realmModel->id);
+        session(['oidc_realm_' . $realmModel->id => $user->id]);
+        session()->forget('oidc_auth_request');
+
+        $this->auditService->logLoginSuccess($user->id, $realmModel->id, $request);
+
+        $client = Client::find($authRequest['client_id']);
+
+        return $this->issueAuthorizationCode(
+            $realmModel,
+            $client,
+            $user,
+            $authRequest['redirect_uri'],
+            $authRequest['scope'],
+            $authRequest['state'],
+            $authRequest['nonce'] ?? null
+        );
+    }
+
+    public function showRequiredAction(Request $request, string $realm)
+    {
+        $realmModel = $request->get('realm_model');
+        $userId = session('oidc_pending_user_' . $realmModel->id);
+
+        if (!$userId) {
+            return redirect()->route('oidc.authorize', ['realm' => $realm]);
+        }
+
+        $user = User::find($userId);
+        $actions = $user->requiredActions()
+            ->where('required', true)
+            ->whereNull('completed_at')
+            ->get();
+
+        return view('oidc.required-action', [
+            'realm' => $realmModel,
+            'user' => $user,
+            'actions' => $actions,
+        ]);
+    }
+
+    public function completeRequiredAction(Request $request, string $realm)
+    {
+        $request->validate([
+            'action' => 'required|in:verify_email,update_password,configure_totp',
+        ]);
+
+        $realmModel = $request->get('realm_model');
+        $userId = session('oidc_pending_user_' . $realmModel->id);
+
+        if (!$userId) {
+            abort(400, 'Invalid required action request');
+        }
+
+        $user = User::find($userId);
+        $action = $user->requiredActions()
+            ->where('action', $request->input('action'))
+            ->first();
+
+        if ($action) {
+            $action->complete();
+        }
+
+        $remainingActions = $user->requiredActions()
+            ->where('required', true)
+            ->whereNull('completed_at')
+            ->count();
+
+        if ($remainingActions > 0) {
+            return redirect()->route('oidc.required-action', ['realm' => $realm]);
+        }
+
+        $authRequest = session('oidc_auth_request');
+
+        if ($user->hasTwoFactorEnabled()) {
+            session()->forget('oidc_pending_user_' . $realmModel->id);
+            session(['oidc_mfa_user_' . $realmModel->id => $user->id]);
+            return redirect()->route('oidc.mfa-challenge', ['realm' => $realm]);
+        }
+
+        session()->forget('oidc_pending_user_' . $realmModel->id);
+        session(['oidc_realm_' . $realmModel->id => $user->id]);
+        session()->forget('oidc_auth_request');
+
+        $this->auditService->logLoginSuccess($user->id, $realmModel->id, $request);
+
+        $client = Client::find($authRequest['client_id']);
+
+        return $this->issueAuthorizationCode(
+            $realmModel,
+            $client,
+            $user,
+            $authRequest['redirect_uri'],
+            $authRequest['scope'],
+            $authRequest['state'],
+            $authRequest['nonce'] ?? null
+        );
     }
 
     protected function issueAuthorizationCode(Realm $realm, Client $client, User $user, string $redirectUri, string $scope, string $state, ?string $nonce)

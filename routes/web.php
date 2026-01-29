@@ -21,5 +21,9 @@ Route::middleware(['web', \App\Http\Middleware\RealmExists::class])
             Route::post('/userinfo', [OidcController::class, 'userinfo']);
             Route::get('/logout', [OidcController::class, 'logout']);
             Route::post('/logout', [OidcController::class, 'logout']);
+            Route::get('/mfa', [OidcController::class, 'showMfaChallenge'])->name('oidc.mfa-challenge');
+            Route::post('/mfa', [OidcController::class, 'verifyMfa']);
+            Route::get('/required-action', [OidcController::class, 'showRequiredAction'])->name('oidc.required-action');
+            Route::post('/required-action', [OidcController::class, 'completeRequiredAction']);
         });
     });

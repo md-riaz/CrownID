@@ -71,7 +71,7 @@ class TokenClaimsWithRolesTest extends TestCase
 
         $this->user->directRoles()->attach([$adminRole->id, $userRole->id]);
 
-        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->id, ['openid']);
+        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->client_id, ['openid']);
         
         $parser = new Parser(new JoseEncoder());
         $parsedToken = $parser->parse($token);
@@ -99,17 +99,17 @@ class TokenClaimsWithRolesTest extends TestCase
 
         $this->user->directRoles()->attach([$viewerRole->id, $editorRole->id]);
 
-        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->id, ['openid']);
+        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->client_id, ['openid']);
         
         $parser = new Parser(new JoseEncoder());
         $parsedToken = $parser->parse($token);
         $claims = $parsedToken->claims()->all();
 
         $this->assertArrayHasKey('resource_access', $claims);
-        $this->assertArrayHasKey($this->client->id, $claims['resource_access']);
-        $this->assertArrayHasKey('roles', $claims['resource_access'][$this->client->id]);
-        $this->assertContains('viewer', $claims['resource_access'][$this->client->id]['roles']);
-        $this->assertContains('editor', $claims['resource_access'][$this->client->id]['roles']);
+        $this->assertArrayHasKey($this->client->client_id, $claims['resource_access']);
+        $this->assertArrayHasKey('roles', $claims['resource_access'][$this->client->client_id]);
+        $this->assertContains('viewer', $claims['resource_access'][$this->client->client_id]['roles']);
+        $this->assertContains('editor', $claims['resource_access'][$this->client->client_id]['roles']);
     }
 
     public function test_id_token_includes_realm_roles(): void
@@ -121,7 +121,7 @@ class TokenClaimsWithRolesTest extends TestCase
 
         $this->user->directRoles()->attach($adminRole->id);
 
-        $token = $this->jwtService->createIdToken($this->user, $this->realm, $this->client->id, 'test-nonce');
+        $token = $this->jwtService->createIdToken($this->user, $this->realm, $this->client->client_id, 'test-nonce');
         
         $parser = new Parser(new JoseEncoder());
         $parsedToken = $parser->parse($token);
@@ -148,7 +148,7 @@ class TokenClaimsWithRolesTest extends TestCase
         $group->roles()->attach($adminRole->id);
         $this->user->groups()->attach($group->id);
 
-        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->id, ['openid']);
+        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->client_id, ['openid']);
         
         $parser = new Parser(new JoseEncoder());
         $parsedToken = $parser->parse($token);
@@ -179,7 +179,7 @@ class TokenClaimsWithRolesTest extends TestCase
         $parentRole->childRoles()->attach([$childRole1->id, $childRole2->id]);
         $this->user->directRoles()->attach($parentRole->id);
 
-        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->id, ['openid']);
+        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->client_id, ['openid']);
         
         $parser = new Parser(new JoseEncoder());
         $parsedToken = $parser->parse($token);
@@ -206,7 +206,7 @@ class TokenClaimsWithRolesTest extends TestCase
 
         $this->user->directRoles()->attach([$realmRole->id, $clientRole->id]);
 
-        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->id, ['openid']);
+        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->client_id, ['openid']);
         
         $parser = new Parser(new JoseEncoder());
         $parsedToken = $parser->parse($token);
@@ -217,13 +217,13 @@ class TokenClaimsWithRolesTest extends TestCase
         $this->assertIsArray($claims['realm_access']['roles']);
         
         $this->assertIsArray($claims['resource_access']);
-        $this->assertIsArray($claims['resource_access'][$this->client->id]);
-        $this->assertIsArray($claims['resource_access'][$this->client->id]['roles']);
+        $this->assertIsArray($claims['resource_access'][$this->client->client_id]);
+        $this->assertIsArray($claims['resource_access'][$this->client->client_id]['roles']);
     }
 
     public function test_token_without_roles_omits_claims(): void
     {
-        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->id, ['openid']);
+        $token = $this->jwtService->createAccessToken($this->user, $this->realm, $this->client->client_id, ['openid']);
         
         $parser = new Parser(new JoseEncoder());
         $parsedToken = $parser->parse($token);

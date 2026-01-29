@@ -94,7 +94,7 @@ class OidcEndpointsTest extends TestCase
     {
         $params = [
             'response_type' => 'code',
-            'client_id' => $this->client->id,
+            'client_id' => $this->client->client_id,  // Use OAuth client_id, not UUID
             'redirect_uri' => 'http://localhost:3000/callback',
             'scope' => 'openid profile email',
             'state' => 'test-state',
@@ -120,7 +120,7 @@ class OidcEndpointsTest extends TestCase
     {
         $params = [
             'response_type' => 'code',
-            'client_id' => $this->client->id,
+            'client_id' => $this->client->client_id,  // Use OAuth client_id, not UUID
             'redirect_uri' => 'http://localhost:3000/callback',
             'scope' => 'profile email',
             'state' => 'test-state',
@@ -137,7 +137,8 @@ class OidcEndpointsTest extends TestCase
         session([
             'oidc_auth_request' => [
                 'realm_id' => $this->realm->id,
-                'client_id' => $this->client->id,
+                'client_id' => $this->client->id,  // Store UUID for lookup
+                'oauth_client_id' => $this->client->client_id,  // Store OAuth client_id
                 'redirect_uri' => 'http://localhost:3000/callback',
                 'scope' => 'openid profile email',
                 'state' => 'test-state',
@@ -161,22 +162,24 @@ class OidcEndpointsTest extends TestCase
     public function test_token_endpoint_exchanges_code_for_tokens(): void
     {
         $code = 'test-authorization-code';
-        session([
-            'oidc_code_' . $code => [
-                'user_id' => $this->user->id,
-                'client_id' => $this->client->id,
-                'redirect_uri' => 'http://localhost:3000/callback',
-                'scope' => 'openid profile email',
-                'nonce' => 'test-nonce',
-                'expires_at' => time() + 300,
-            ]
+        
+        // Insert authorization code into database instead of session
+        \DB::table('oauth_auth_codes')->insert([
+            'id' => $code,
+            'user_id' => $this->user->id,
+            'client_id' => $this->client->id,  // UUID
+            'scopes' => json_encode(['openid', 'profile', 'email']),
+            'redirect_uri' => 'http://localhost:3000/callback',
+            'nonce' => 'test-nonce',
+            'revoked' => false,
+            'expires_at' => now()->addMinutes(5),
         ]);
 
         $response = $this->post("/realms/{$this->realm->name}/protocol/openid-connect/token", [
             'grant_type' => 'authorization_code',
             'code' => $code,
             'redirect_uri' => 'http://localhost:3000/callback',
-            'client_id' => $this->client->id,
+            'client_id' => $this->client->client_id,  // Use OAuth client_id
             'client_secret' => 'test-secret',
         ]);
 

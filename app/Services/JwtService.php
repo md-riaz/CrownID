@@ -207,7 +207,7 @@ class JwtService
             foreach ($clientRolesMap as $cid => $roles) {
                 $client = \App\Models\Client::find($cid);
                 if ($client) {
-                    $result['resource_access'][$client->id] = [
+                    $result['resource_access'][$client->client_id] = [
                         'roles' => array_values(array_unique($roles))
                     ];
                 }

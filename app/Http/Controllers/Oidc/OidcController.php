@@ -42,7 +42,7 @@ class OidcController extends Controller
             'response_types_supported' => ['code'],
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => ['RS256'],
-            'grant_types_supported' => ['authorization_code', 'refresh_token'],
+            'grant_types_supported' => ['authorization_code'],
             'scopes_supported' => ['openid', 'profile', 'email'],
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post'],
             'claims_supported' => [
@@ -79,7 +79,7 @@ class OidcController extends Controller
         }
 
         $client = Client::where('realm_id', $realmModel->id)
-            ->where('id', $clientId)
+            ->where('client_id', $clientId)
             ->where('enabled', true)
             ->first();
 
@@ -108,7 +108,8 @@ class OidcController extends Controller
         session([
             'oidc_auth_request' => [
                 'realm_id' => $realmModel->id,
-                'client_id' => $clientId,
+                'client_id' => $client->id,  // Store UUID for later lookup
+                'oauth_client_id' => $clientId,  // Store OAuth client_id for reference
                 'redirect_uri' => $redirectUri,
                 'scope' => $scope,
                 'state' => $state,
@@ -203,7 +204,7 @@ class OidcController extends Controller
     public function token(Request $request, string $realm)
     {
         $request->validate([
-            'grant_type' => 'required|in:authorization_code,refresh_token',
+            'grant_type' => 'required|in:authorization_code',
             'code' => 'required_if:grant_type,authorization_code',
             'redirect_uri' => 'required_if:grant_type,authorization_code',
         ]);
@@ -428,19 +429,10 @@ class OidcController extends Controller
             'user_id' => $user->id,
             'client_id' => $client->id,
             'scopes' => json_encode(explode(' ', $scope)),
+            'redirect_uri' => $redirectUri,
+            'nonce' => $nonce,
             'revoked' => false,
             'expires_at' => $expiresAt,
-        ]);
-
-        session([
-            'oidc_code_' . $code => [
-                'user_id' => $user->id,
-                'client_id' => $client->id,
-                'redirect_uri' => $redirectUri,
-                'scope' => $scope,
-                'nonce' => $nonce,
-                'expires_at' => $expiresAt->timestamp,
-            ]
         ]);
 
         $separator = str_contains($redirectUri, '?') ? '&' : '?';
@@ -455,41 +447,45 @@ class OidcController extends Controller
         $code = $request->input('code');
         $redirectUri = $request->input('redirect_uri');
 
-        $codeData = session('oidc_code_' . $code);
+        // Load authorization code from database, not session
+        $codeRecord = DB::table('oauth_auth_codes')
+            ->where('id', $code)
+            ->where('revoked', false)
+            ->first();
 
-        if (!$codeData) {
+        if (!$codeRecord) {
             return response()->json(['error' => 'invalid_grant', 'error_description' => 'Invalid authorization code'], 400);
         }
 
-        if ($codeData['expires_at'] < time()) {
-            session()->forget('oidc_code_' . $code);
+        if ($codeRecord->expires_at && strtotime($codeRecord->expires_at) < time()) {
             DB::table('oauth_auth_codes')->where('id', $code)->update(['revoked' => true]);
             return response()->json(['error' => 'invalid_grant', 'error_description' => 'Authorization code expired'], 400);
         }
 
-        if ($codeData['redirect_uri'] !== $redirectUri) {
+        if ($codeRecord->redirect_uri !== $redirectUri) {
             return response()->json(['error' => 'invalid_grant', 'error_description' => 'Redirect URI mismatch'], 400);
         }
 
-        $clientId = $this->getClientIdFromAuth($request);
+        // Get client_id from authentication (Basic Auth or POST body)
+        $authenticatedClientId = $this->getClientIdFromAuth($request);
         
-        if (!$clientId || $codeData['client_id'] !== $clientId) {
+        if (!$authenticatedClientId || $codeRecord->client_id !== $authenticatedClientId) {
             return response()->json(['error' => 'invalid_client'], 401);
         }
 
-        $user = User::find($codeData['user_id']);
-        $client = Client::find($clientId);
+        $user = User::find($codeRecord->user_id);
+        $client = Client::find($authenticatedClientId);
 
         if (!$user || !$client) {
             return response()->json(['error' => 'invalid_grant'], 400);
         }
 
-        session()->forget('oidc_code_' . $code);
+        // Revoke the authorization code (one-time use)
         DB::table('oauth_auth_codes')->where('id', $code)->update(['revoked' => true]);
 
-        $scopes = explode(' ', $codeData['scope']);
-        $accessToken = $this->jwtService->createAccessToken($user, $realm, $clientId, $scopes);
-        $idToken = $this->jwtService->createIdToken($user, $realm, $clientId, $codeData['nonce'] ?? null);
+        $scopes = json_decode($codeRecord->scopes, true) ?? [];
+        $accessToken = $this->jwtService->createAccessToken($user, $realm, $client->client_id, $scopes);
+        $idToken = $this->jwtService->createIdToken($user, $realm, $client->client_id, $codeRecord->nonce);
         $refreshToken = Str::random(64);
 
         $expiresIn = $realm->access_token_lifespan ?? 300;
@@ -500,7 +496,7 @@ class OidcController extends Controller
             'expires_in' => $expiresIn,
             'refresh_token' => $refreshToken,
             'id_token' => $idToken,
-            'scope' => $codeData['scope'],
+            'scope' => implode(' ', $scopes),
         ]);
     }
 
@@ -510,21 +506,21 @@ class OidcController extends Controller
         
         if ($authHeader && str_starts_with($authHeader, 'Basic ')) {
             $credentials = base64_decode(substr($authHeader, 6));
-            [$clientId, $clientSecret] = explode(':', $credentials, 2);
+            [$oauthClientId, $clientSecret] = explode(':', $credentials, 2);
             
-            $client = Client::find($clientId);
+            $client = Client::where('client_id', $oauthClientId)->first();
             if ($client && hash_equals($client->secret ?? '', $clientSecret)) {
-                return $clientId;
+                return $client->id;  // Return UUID primary key
             }
         }
 
-        $clientId = $request->input('client_id');
+        $oauthClientId = $request->input('client_id');
         $clientSecret = $request->input('client_secret');
         
-        if ($clientId && $clientSecret) {
-            $client = Client::find($clientId);
+        if ($oauthClientId && $clientSecret) {
+            $client = Client::where('client_id', $oauthClientId)->first();
             if ($client && hash_equals($client->secret ?? '', $clientSecret)) {
-                return $clientId;
+                return $client->id;  // Return UUID primary key
             }
         }
 
